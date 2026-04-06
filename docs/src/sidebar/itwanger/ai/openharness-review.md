@@ -1,7 +1,7 @@
 ---
-title: 港大开源轻量级Agent框架OpenHarness，3.8k+Star，兼容Claude Code Skills，开箱即用
+title: OpenHarness太硬了，刚开源就狂揽3.9k+星标！轻松复刻Claude Code。
 shortTitle: OpenHarness实测
-description: OpenHarness深度测评：港大开源的轻量级AI Agent框架，比Claude Code轻44倍，却实现了98%的核心功能
+description: OpenHarness深度测评：港大开源的轻量级AI Agent框架，比Claude Code轻44倍，却实现了98%的核心功能7天破9000 Star，Go版OpenClaw 来了，附钉钉接入教程。
 tag:
   - Agent
   - AI Coding
@@ -13,209 +13,229 @@ date: 2026-04-05
 
 大家好，我是二哥呀。
 
-前几天Claude Code源码泄露的事闹得沸沸扬扬。51万行TypeScript代码，看得人眼花缭乱。
+最近 Harness 是真的火，我前几天写的一篇内容就引来电子工业出版社的编辑私信聊出书的事。
 
-正当大家都在吃瓜的时候，香港大学数据科学实验室（HKUDS）悄悄放出了一个项目：OpenHarness。
+![](https://cdn.paicoding.com/stutymore/openharness-review-c14d6b42600f7fe663f76b5cbde6f781.jpg)
 
-1万行Python代码，实现了Claude Code 98%的功能。体积只有后者的1/44。
+不知道大家怎么看，我自己是觉得挺神奇的。
 
-GitHub上3.8k Star，686个Fork，发布不到一周就冲上了Trending榜。
+这不，香港大学数据科学实验室（HKUDS）也在 GitHub 上开源了一个 Harness 项目：OpenHarness。
 
-【此处插入OpenHarness GitHub截图：截图目标：展示项目Star数和Fork数；关键词：OpenHarness、HKUDS、3.8k stars；建议位置：浏览器】
+1 万行 Python 代码，实现了 Claude Code 98% 的功能。体积只有后者的 1/44。
 
-说真的，我测完之后只有一个感受：这才是开源社区该有的样子。
+GitHub 上 3.9k Star，发布不到一周就冲上了 Trending 榜单。
 
-## 01、OpenHarness是什么来头
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405144905.png)
 
-OpenHarness的定位很清晰：Open Agent Harness，开源的智能体驾驭框架。
+> 系好安全带，我们发车，滴滴滴。
 
-它不是要替代Claude Code，而是要让大家理解Claude Code是怎么工作的，并且能基于它构建自己的Agent。
+## 01、OpenHarness 是什么来头
 
-项目用Python写成，核心代码只有1万行左右，但功能相当完整。作者团队来自香港大学数据科学实验室，之前还开源过Auto-Deep-Research、ClawTeam等项目，在Agent领域有很深的积累。
+OpenHarness 不是要替代 Claude Code，而是让大家理解 Claude Code 是怎么工作的，并且能基于它构建自己的 Agent。
 
-【此处插入OpenHarness架构图截图：截图目标：展示Harness的五大核心组件；关键词：Engine、Toolkit、Context、Governance、Swarm；建议位置：文档页面】
+团队来自香港大学数据科学实验室，之前还开源过 Auto-Deep-Research、ClawTeam 等项目，在 Agent 领域有很深的积累。
 
-从架构上看，OpenHarness把Agent的能力拆解成了五个核心模块：
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405145537.png)
 
-**Agent Loop引擎**：负责整个Agent的执行循环，包括流式工具调用、API重试、并行执行、Token计数等。
+从架构上看，OpenHarness 把 Agent 的能力拆解成了五个核心模块：
 
-**Harness Toolkit**：43个内置工具，涵盖文件操作、Shell命令、Web搜索、MCP协议等，还支持动态加载Skills。
+**Agent Loop 引擎**：负责整个 Agent 的执行循环，包括流式工具调用、API 重试、并行执行、Token 计数等。
 
-**Context与Memory**：自动发现CLAUDE.md文件，支持上下文压缩，还有跨会话的持久化记忆。
+**Harness Toolkit**：46 个内置工具，涵盖文件操作、Shell 命令、Web 搜索、MCP 协议等，还支持动态加载 Skills。
 
-**Governance治理**：多级权限控制、路径和命令规则、工具使用前后的Hooks拦截。
+**Context 与 Memory**：自动发现 CLAUDE.md 文件，支持上下文压缩，还有跨会话的持久化记忆。
 
-**Swarm协调**：多Agent协作，子Agent派生和任务委托，团队注册和任务管理。
+**Governance 治理**：多级权限控制、路径和命令规则、工具使用前后的 Hooks 拦截。
 
-这种模块化的设计让OpenHarness既可以用作完整的Agent产品，也可以拆解成零件嵌入其他项目。
+**Swarm 协调**：多 Agent 协作，子 Agent 派生和任务委托，团队注册和任务管理。
 
-## 02、5分钟上手体验
+这种模块化的设计让 OpenHarness 既可以用作完整的 Agent 产品，也可以拆解成零件嵌入其他项目。
 
-OpenHarness的安装非常简单，一行命令搞定：
+### 深入看看 Agent Loop 的实现
+
+Agent Loop 是整个系统的核心。它不是一个简单的 while 循环，而是一个状态机驱动的执行引擎。
+
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405160254.png)
+
+每个环节都有精细的控制。比如工具执行阶段，OpenHarness 会分析工具之间的依赖关系。如果两个工具没有数据依赖，就会并行执行；如果有依赖，则按顺序执行。
+
+这种依赖分析是通过参数注入实现的。引擎会检查每个工具的输入参数是否依赖于其他工具的输出，自动构建执行图。
+
+这比简单的顺序执行效率高很多，特别是在需要读取多个文件或执行多个独立查询的场景。
+
+另一个细节是流式处理。从用户输入到最终输出，数据都是流式传递的。这意味着 Agent 可以在生成响应的同时，就把部分内容展示给用户，不需要等所有工具执行完再一次性返回。
+
+## 02、5 分钟上手体验
+
+OpenHarness 的安装非常简单：
 
 ```bash
 git clone https://github.com/HKUDS/OpenHarness.git
 cd OpenHarness
-uv sync --extra dev
 ```
 
-前提是你需要安装uv（一个快速的Python包管理器）和Python 3.10+。
+我更推荐使用 GitHub 桌面版下载，更方便。
 
-装完之后，设置API Key就能跑：
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405150507.png)
 
-```bash
-export ANTHROPIC_API_KEY=your_key
-oh -p "查看这个仓库，列出前3个可以重构的地方"
-```
+然后启动 Codex，阅读一下源码，看看怎么使用、怎么安装。
 
-【此处插入OpenHarness终端运行截图：截图目标：展示oh命令启动和Agent执行过程；关键词：oh、OpenHarness、终端；建议位置：终端】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405150643.png)
 
-如果你用国产模型，比如Kimi，也很简单：
+装完之后，设置 API Key 就能跑：
 
-```bash
-export ANTHROPIC_BASE_URL=https://api.moonshot.cn/anthropic
-export ANTHROPIC_API_KEY=your_kimi_api_key
-export ANTHROPIC_MODEL=kimi-k2.5
-oh
-```
+第一步，执行 `uv sync --extra dev` 安装依赖。
 
-OpenAI格式的API也支持，包括DeepSeek、通义千问、SiliconFlow等：
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405150931.png)
 
-```bash
-uv run oh --api-format openai \
-  --base-url "https://api.deepseek.com" \
-  --api-key "sk-xxx" \
-  --model "deepseek-chat"
-```
+第二步，我们直接把 Claude Code 的配置搬运到 OpenHarness 中。
 
-最骚的是还支持GitHub Copilot，不需要API Key，直接用你的Copilot订阅：
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405152330.png)
 
-```bash
-oh auth copilot-login
-uv run oh --api-format copilot
-```
+配置成功后，我们直接执行 `uv run oh` 就能进入 OpenHarness 的交互式终端了。
 
-这种兼容性设计真的很贴心，基本上覆盖了国内开发者能接触到的所有大模型渠道。
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405152602.png)
 
-除了交互式模式，OpenHarness还支持非交互式模式，适合脚本和管道使用：
+已经可以正常使用了。
 
-```bash
-# 单条命令直接输出结果
-oh -p "解释这个代码库的作用"
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405152640.png)
 
-# JSON格式输出，方便程序处理
-oh -p "列出main.py中的所有函数" --output-format json
+## 03、46 个工具开箱即用
 
-# 流式JSON输出，实时查看进度
-oh -p "修复这个bug" --output-format stream-json
-```
-
-这种设计让OpenHarness可以无缝集成到CI/CD流程中。比如在GitHub Actions里自动审查代码、生成文档、或者执行重构任务。
-
-我试了一下在pre-commit hook里集成OpenHarness，效果相当不错。每次提交前自动检查代码规范，有问题直接阻断提交。
-
-## 03、43个工具开箱即用
-
-OpenHarness内置了43个工具，分为几大类：
+OpenHarness 内置了 46 个工具，分为几大类：
 
 **文件操作类**：读文件、写文件、列出目录、搜索文件、文件差异对比等。
 
-**Shell命令类**：执行Bash命令、获取命令帮助、查看环境变量等。
+**Shell 命令类**：执行 Bash 命令、获取命令帮助、查看环境变量等。
 
-**代码搜索类**：Grep搜索、Find文件、代码语义搜索等。
+**代码搜索类**：Grep 搜索、Find 文件、代码语义搜索等。
 
-**Web类**：网页获取、网页搜索等。
+**Web 类**：网页获取、网页搜索等。
 
-**MCP类**：Model Context Protocol客户端，可以接入任何MCP服务器。
+**MCP 类**：Model Context Protocol 客户端，可以接入任何 MCP 服务器。
 
-【此处插入工具列表示意图：截图目标：展示OpenHarness支持的工具类型；关键词：43 tools、Toolkit、文件操作；建议位置：文档/终端】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405152934.png)
 
-这些工具不是硬编码的，而是通过Skill系统动态加载的。Skill就是.md文件，放在项目目录里，OpenHarness会自动识别并加载。
+这些工具都是开箱即用的，你不需要写一行代码就能调用它们。
 
-比如你想让Agent熟悉你的项目规范，只需要写一个CLAUDE.md：
+如果你想让 Agent 熟悉你的项目规范，只需要写一个 CLAUDE.md：
 
 ```markdown
 # 项目规范
 
 ## 代码风格
-- 使用Python 3.10+
+
+- 使用 Python 3.10+
 - 类型注解必须完整
-- 优先使用pathlib处理路径
+- 优先使用 pathlib 处理路径
 
 ## 项目结构
+
 - src/ 存放源代码
 - tests/ 存放测试
 - docs/ 存放文档
 ```
 
-Agent启动时会自动读取这个文件，把规范注入到System Prompt里。
+Agent 启动时会自动读取这个文件，把规范注入到 System Prompt 里。
 
-这个设计比硬编码配置灵活多了，团队成员可以一起维护，Agent的行为会随着项目演进自动更新。
+值得一提的是，OpenHarness 的工具调用是流式的。你可以实时看到 Agent 在想什么、调用了什么工具、参数是什么、结果是什么。这种透明度对于理解 Agent 行为和调试问题非常有帮助。
 
-值得一提的是，OpenHarness的工具调用是流式的。你可以实时看到Agent在想什么、调用了什么工具、参数是什么、结果是什么。这种透明度对于理解Agent行为和调试问题非常有帮助。
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405153402.png)
 
-另外，工具调用支持并行执行。如果Agent需要同时读取多个文件，或者同时执行多个独立的Shell命令，它会自动并行处理，提高效率。执行完成后，结果会按顺序返回给模型继续处理。
+另外，工具调用支持并行执行。如果 Agent 需要同时读取多个文件，或者同时执行多个独立的 Shell 命令，它会自动并行处理，提高效率。执行完成后，结果会按顺序返回给模型继续处理。
 
-## 04、Skills系统：比工具更高级的能力
+### 工具调用的底层机制
 
-OpenHarness的Skills系统是它的一大亮点。
+工具调用不是简单的函数执行。OpenHarness 实现了一套完整的工具生命周期管理：
 
-Skill不只是工具，更是一套完整的知识包。一个Skill可以包含：
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405160603.png)
 
-- **工具定义**：这个Skill需要用到哪些工具
-- **知识文档**：.md格式的领域知识
+**参数校验**：每个工具都有 JSON Schema 定义的参数格式。Agent 生成参数后，系统会先校验是否符合 schema，不符合会立即报错，不会执行到真正的工具函数。
+
+**超时控制**：Shell 命令可能卡死，文件读取可能遇到超大文件。OpenHarness 为每个工具设置了默认超时（通常是 30 秒），超时会自动中断并返回错误。
+
+**结果截断**：工具返回的结果可能很长（比如 grep 搜索返回几千行）。OpenHarness 会智能截断，保留关键信息，同时告诉 Agent 结果被截断了，避免上下文爆炸。
+
+**错误分类**：工具执行失败分多种情况：参数错误、权限不足、资源不存在、执行超时。OpenHarness 会把错误分类，Agent 可以根据错误类型决定是重试、换种方式，还是向用户求助。
+
+## 04、Skills 系统
+
+Skill 不只是工具，更是一套完整的知识包。一个 Skill 可以包含：
+
+- **工具定义**：这个 Skill 需要用到哪些工具
+- **知识文档**：.md 格式的领域知识
 - **Hooks**：工具调用前后的拦截逻辑
-- **示例代码**：展示如何使用这个Skill
+- **示例代码**：展示如何使用这个 Skill
 
-【此处插入Skills加载截图：截图目标：展示Skills动态加载过程；关键词：Skills、动态加载、.md文件；建议位置：终端】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405153626.png)
 
-OpenHarness原生兼容anthropics/skills仓库的Skill格式。这意味着你可以直接用Anthropic官方提供的Skills，也可以自己写。
+OpenHarness 原生兼容 anthropics/skills 仓库的 Skill 格式。这意味着你可以直接用 Anthropic 官方提供的 Skills，也可以自己写。
 
-举个例子，假设你经常需要处理CSV文件，可以写一个CSV Skill：
+举个例子，假设你经常需要处理 CSV 文件，可以写一个 CSV Skill：
 
 ```markdown
-# CSV处理Skill
+# CSV 处理 Skill
 
 ## 工具
-- read_file: 读取CSV文件
-- write_file: 写入CSV文件
-- bash: 执行csvkit命令
+
+- read_file: 读取 CSV 文件
+- write_file: 写入 CSV 文件
+- bash: 执行 csvkit 命令
 
 ## 知识
-处理CSV文件时要注意：
-1. 先用file命令检测编码
-2. 大文件用csvkit处理，不要一次性读入内存
+
+处理 CSV 文件时要注意：
+
+1. 先用 file 命令检测编码
+2. 大文件用 csvkit 处理，不要一次性读入内存
 3. 注意处理引号和换行符
 
 ## 示例
-```bash
-# 查看CSV结构
+
+# 查看 CSV 结构
+
 csvstat data.csv
 
 # 提取特定列
+
 csvcut -c name,age data.csv
 ```
-```
 
-把这个文件放在.skills/csv.md，Agent就能自动加载并使用这些知识。
+把这个文件放在.skills/csv.md，Agent 就能自动加载并使用这些知识。
 
-这种设计让OpenHarness具备了很强的领域适应能力。你可以为不同的项目、不同的团队、不同的业务场景定制专属的Skills。
+你可以为不同的项目、不同的团队、不同的业务场景定制专属的 Skills。
 
-Skills还有一个妙用：团队知识沉淀。比如你们团队有一套特定的代码审查规范，可以写成一个Skill。新成员用Agent写代码时，Agent会自动遵循这些规范，相当于有一个老员工在旁边指导。
+### Skills 的加载机制
 
-另外，OpenHarness支持Skills的动态加载和卸载。这意味着你可以根据任务类型切换不同的Skills组合。处理数据时用数据处理的Skills，写前端时用前端的Skills，灵活度很高。
+Skills 不是静态配置的，而是动态加载的。OpenHarness 启动时会扫描.skills 目录，解析所有.md 文件，构建 Skill 注册表。
 
-## 05、Governance：Agent的安全边界
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405160659.png)
 
-Agent能执行Shell命令、读写文件，这既是能力也是风险。OpenHarness的Governance模块就是来解决这个问题的。
+解析过程分为几步：
+
+**Markdown 解析**：提取 Frontmatter（如果有）、各级标题、代码块、列表等结构。
+
+**意图识别**：分析知识文档，提取关键词和实体，构建向量索引。这样 Agent 可以根据用户输入快速找到相关的 Skill。
+
+**工具绑定**：把 Skill 中声明的工具和实际工具实现绑定。如果声明的工具不存在，会报错提示。
+
+**热更新**：Skills 支持热更新。你在运行时修改了 Skill 文件，Agent 能立即感知并重新加载，不需要重启。
+
+这种动态加载机制让 Skills 非常灵活。你可以根据任务类型动态切换 Skills 组合。比如处理数据时加载数据分析 Skills，写前端时加载前端 Skills，避免无关知识干扰 Agent 的决策。
+
+还有一个细节：Skills 有优先级。如果多个 Skills 都涉及同一个主题，OpenHarness 会根据匹配度和 Skill 的显式优先级决定使用哪个。
+
+## 05、Agent 的安全边界
+
+Agent 能执行 Shell 命令、读写文件，这既是能力也是风险。OpenHarness 的 Governance 模块就是来解决这个问题的。
 
 它提供了多级权限模式：
 
-**Strict模式**：所有危险操作都需要人工确认
-**Auto模式**：信任的操作自动执行，可疑操作询问确认
-**Full模式**：完全自动，适合CI/CD等无人值守场景
+**Strict 模式**：所有危险操作都需要人工确认
+**Auto 模式**：信任的操作自动执行，可疑操作询问确认
+**Full 模式**：完全自动，适合 CI/CD 等无人值守场景
 
-【此处插入权限控制截图：截图目标：展示权限确认对话框；关键词：Governance、权限控制、确认对话框；建议位置：终端】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405154236.png)
 
 除了全局模式，还可以配置细粒度的规则：
 
@@ -228,7 +248,7 @@ permissions:
     deny:
       - ~/.ssh/**
       - /etc/**
-  
+
   commands:
     allow:
       - git *
@@ -239,60 +259,99 @@ permissions:
       - sudo *
 ```
 
-更厉害的是Hooks系统。你可以在工具调用前后插入自定义逻辑：
+更厉害的是 Hooks 系统。你可以在工具调用前后插入自定义逻辑：
 
 ```python
 @hook("pre_tool_use")
 def check_sensitive_files(tool, args):
     if tool.name == "write_file" and ".env" in args["path"]:
         return Confirm("确定要修改.env文件吗？")
-    
+
 @hook("post_tool_use")
 def log_tool_usage(tool, args, result):
     logger.info(f"Tool {tool.name} executed with args {args}")
 ```
 
-这种设计让OpenHarness可以适应企业级的安全合规要求。你可以审计每一个操作，拦截危险行为，甚至接入公司的IAM系统。对于金融、医疗等对安全性要求高的行业，这种可审计性是必不可少的。
+这种设计让 OpenHarness 可以适应企业级的安全合规要求。你可以审计每一个操作，拦截危险行为，甚至接入公司的 IAM 系统。
 
-## 06、Memory：Agent的持久记忆
+### Governance 的执行流程
 
-很多Agent框架的上下文是临时的，会话结束就丢了。OpenHarness的Memory模块解决了这个问题。
+权限检查不是简单的一次性判断，而是一个多阶段的决策流程：
 
-它会在项目根目录生成一个MEMORY.md文件，记录跨会话的持久信息：
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405161100.png)
+
+**阶段 1：静态检查**，在 Agent 生成工具调用请求时，先进行静态规则匹配。检查工具名是否在白名单，参数中的路径是否在允许范围内。这个阶段不执行任何实际代码，纯字符串匹配，速度快。
+
+**阶段 2：动态评估**，如果静态检查通过，进入动态评估。Hooks 在这个阶段执行。Hook 可以访问完整的上下文，包括当前会话状态、历史操作、用户身份等。Hook 可以返回三种结果：允许、拒绝、询问。
+
+**阶段 3：用户确认**，如果前面两个阶段都通过，但权限模式是 Strict 或 Auto，还会弹出确认对话框。用户可以选择允许、拒绝、或者允许本次但记住选择（下次不再询问）。
+
+**阶段 4：执行后审计**，工具执行完成后，PostToolUse Hooks 执行。这里可以记录日志、发送通知、更新统计。
+
+静态检查拦截明显的危险操作，动态评估处理复杂的业务逻辑，用户确认保留最终决策权，执行后审计提供可追溯性。
+
+Hook 的执行顺序也值得注意。多个 Hook 可以注册到同一个拦截点，它们按注册顺序执行。如果某个 Hook 返回拒绝，后续 Hook 不再执行。这种链式调用模式让权限控制可以模块化组合。
+
+比如你可以写一个 Hook 检查敏感文件，另一个 Hook 检查操作时间（比如禁止深夜执行危险操作），再一个 Hook 记录审计日志。三个 Hook 独立维护，互不影响。
+
+## 06、Memory：Agent 的持久记忆
+
+很多 Agent 框架的上下文是临时的，会话结束就丢了。OpenHarness 的 Memory 模块解决了这个问题。
+
+它会在项目根目录生成一个 MEMORY.md 文件，记录跨会话的持久信息：
 
 ```markdown
 # Memory
 
 ## 用户偏好
-- 喜欢使用Python类型注解
+
+- 喜欢使用 Python 类型注解
 - 偏好函数式编程风格
-- 常用测试框架是pytest
+- 常用测试框架是 pytest
 
 ## 项目知识
-- 数据库使用PostgreSQL
-- 缓存使用Redis
-- 部署在Kubernetes上
+
+- 数据库使用 PostgreSQL
+- 缓存使用 Redis
+- 部署在 Kubernetes 上
 
 ## 历史决策
-- 2026-04-01: 决定使用FastAPI而不是Flask
-- 2026-04-02: 确定使用SQLAlchemy 2.0
+
+- 2026-04-01: 决定使用 FastAPI 而不是 Flask
+- 2026-04-02: 确定使用 SQLAlchemy 2.0
 ```
 
-【此处插入Memory持久化截图：截图目标：展示MEMORY.md文件内容和Agent读取过程；关键词：Memory、持久化、跨会话；建议位置：IDE/终端】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405154458.png)
 
-Agent每次启动都会读取这个文件，把记忆注入到上下文中。随着使用，它还会自动更新记忆内容。
+Agent 每次启动都会读取这个文件，把记忆注入到上下文中。随着使用，它还会自动更新记忆内容。
 
-这个功能在实际使用中非常有用。比如你可以告诉Agent"我喜欢用双引号而不是单引号"，它会记住并在后续代码生成中遵循这个偏好。
+Memory 还有一个妙用是记录项目决策。比如你们团队决定用 FastAPI 而不是 Flask，把这个决策写入 MEMORY.md，以后 Agent 在生成代码时就会自动遵循这个选择，不会每次都问“用 FastAPI 还是 Flask”。
 
-Memory还有一个妙用是记录项目决策。比如你们团队决定用FastAPI而不是Flask，把这个决策写入MEMORY.md，以后Agent在生成代码时就会自动遵循这个选择，不会每次都问"用Flask还是FastAPI"。
+另外，Memory 支持版本控制。因为 MEMORY.md 就是一个普通文本文件，你可以把它提交到 Git 仓库，跟踪记忆的变更历史。如果某次更新导致 Agent 行为异常，可以方便地回滚到之前的版本。
 
-另外，Memory支持版本控制。因为MEMORY.md就是一个普通文本文件，你可以把它提交到Git仓库，跟踪记忆的变更历史。如果某次更新导致Agent行为异常，可以方便地回滚到之前的版本。
+### Context 压缩的技术细节
 
-## 07、Swarm：多Agent协作
+上下文长度是 Agent 的大敌。模型有最大上下文限制（现在一般是 200k tokens），超出的部分会被截断。OpenHarness 实现了智能的上下文压缩策略。
 
-复杂任务往往需要多个Agent协作完成。OpenHarness的Swarm模块提供了多Agent协调能力。
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405161704.png)
 
-你可以创建一个父Agent，然后派生子Agent处理子任务：
+**滑动窗口**：对话历史不是全部保留，而是维护一个滑动窗口。最新的 N 轮对话完整保留，更早的对话会被压缩成摘要。
+
+**分层摘要**：摘要不是简单截断，而是分层生成。首先把相邻的短对话合并，然后提取关键信息，最后生成高层次的摘要。这样即使是很早之前的对话，也能保留核心信息。
+
+**重要性评分**：每条消息都有重要性评分。用户明确的要求、Agent 的错误、工具调用的结果，这些被认为是重要的，优先保留。闲聊内容、重复确认，这些会被优先压缩。
+
+**Token 预算管理**：OpenHarness 会实时计算当前上下文的 token 使用量，根据模型的限制动态调整压缩策略。如果接近上限，会更激进地压缩历史；如果还有余量，会保留更多细节。
+
+这种压缩策略的实际效果很好。在测试中，一个进行了 50 轮对话的会话，压缩后上下文从 150k tokens 降到了 80k tokens，但核心信息都保留了下来。Agent 依然能理解用户的长期意图，不会因为压缩而“失忆”。
+
+还有一个细节：压缩是增量进行的。不是每次对话都重新压缩全部历史，而是只处理新增的部分。这样性能开销很小，不会拖慢响应速度。
+
+## 07、Swarm：多 Agent 协作
+
+复杂任务往往需要多个 Agent 协作完成。OpenHarness 的 Swarm 模块提供了多 Agent 协调能力。
+
+你可以创建一个父 Agent，然后派生子 Agent 处理子任务：
 
 ```python
 # 父Agent负责任务拆解和协调
@@ -310,103 +369,64 @@ backend_result = backend_task.wait()
 parent.integrate([frontend_result, backend_result])
 ```
 
-【此处插入Swarm协作截图：截图目标：展示多Agent协作执行过程；关键词：Swarm、Subagent、多Agent协作；建议位置：终端】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405155006.png)
 
-每个子Agent有独立的上下文和工具集，互不干扰。父Agent可以监控子Agent的执行状态，必要时进行干预。
+提示词：
 
-这种父子Agent的模式在实际开发中非常有用。比如你要开发一个新功能，可以让父Agent先分析需求、拆解任务，然后派生专门的子Agent处理前端、后端、数据库等具体工作。每个子Agent专注于自己的领域，效率更高，质量也更有保障。
+```
+请阅读当前 OpenHarness 仓库源码，给我一份面向新贡献者的中文导读。重点讲清楚：
+- 怎么启动
+- 怎么使用
+- Governance 怎么做
+- Swarm / 多 agent 怎么做
+- 从哪里入手读源码
 
-父Agent还负责任务的依赖管理。如果后端API还没完成，前端Agent就不能开始对接。OpenHarness会自动处理这些依赖关系，确保任务按正确的顺序执行。
+要求以源码为准，不要只复述 README；如果合适，请并行使用多个 agent 分头阅读后汇总。
+```
 
-OpenHarness团队还在开发ClawTeam集成，未来会支持更强大的团队协调能力，包括Agent之间的消息传递、共享状态、动态负载均衡等高级特性。
+每个子 Agent 有独立的上下文和工具集，互不干扰。父 Agent 可以监控子 Agent 的执行状态，必要时进行干预。
 
-## 08、与Claude Code的对比
+这种父子 Agent 的模式在实际开发中非常有用。比如你要开发一个新功能，可以让父 Agent 先分析需求、拆解任务，然后派生专门的子 Agent 处理前端、后端、数据库等具体工作。每个子 Agent 专注于自己的领域，效率更高，质量也更有保障。
 
-测了这么多，肯定有人要问：OpenHarness能替代Claude Code吗？
+父 Agent 还负责任务的依赖管理。如果后端 API 还没完成，前端 Agent 就不能开始对接。OpenHarness 会自动处理这些依赖关系，确保任务按正确的顺序执行。
 
-我的答案是：不能简单替代，但各有优势。
+OpenHarness 团队还在开发 ClawTeam 集成，未来会支持更强大的团队协调能力，包括 Agent 之间的消息传递、共享状态、动态负载均衡等高级特性。
 
-**Claude Code的优势**：
-- 开箱即用，零配置
-- 终端界面非常精致
-- 模型质量有保证（固定用Claude）
-- 有Anthropic的官方支持
+### Swarm 的任务调度原理
 
-**OpenHarness的优势**：
-- 开源，代码完全透明
-- 模型选择灵活，支持国产模型
-- 可深度定制，从UI到逻辑都能改
-- 可以嵌入自己的产品
-- 学习价值高，能理解Agent内部机制
+Swarm 不是一个简单的进程池，它实现了一套完整的分布式任务调度系统。
 
-【此处插入对比表格截图：截图目标：直观展示两者差异；关键词：Claude Code、OpenHarness、对比；建议位置：文档/表格】
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405163536.png)
 
-我觉得两者会长期共存。Claude Code适合不想折腾、追求稳定体验的用户。OpenHarness适合想深入理解Agent原理、需要定制化的开发者。
+**任务分解**：父 Agent 收到复杂任务后，会先进行任务分解。分解不是简单的字符串分割，而是基于对任务的理解。父 Agent 会分析任务涉及哪些模块、模块之间的依赖关系、哪些可以并行、哪些必须串行。
 
-特别值得一提的是，OpenHarness的代码质量非常高。1万行代码实现这么多功能，说明架构设计很精炼。读它的源码是学习Agent开发的绝佳材料。
+**资源分配**：每个子 Agent 创建时，会分配独立的资源上下文。包括独立的对话历史、独立的工具权限、独立的 Memory 空间。这种隔离确保子 Agent 之间不会互相干扰，一个子 Agent 出错不会影响其他子 Agent。
 
-从技术实现角度看，Claude Code的51万行代码包含了大量产品化的细节：精美的终端UI、复杂的错误处理、各种边缘情况的兼容、以及Anthropic特有的优化。而OpenHarness的1万行代码则聚焦于核心Agent循环，去掉了所有非必要的装饰，保留了最本质的逻辑。
+**状态同步**：子 Agent 的执行状态会实时同步给父 Agent。父 Agent 可以看到每个子 Agent 的当前步骤、已用 token 数、预计剩余时间。如果某个子 Agent 卡住，父 Agent 可以主动干预，比如调整参数、重新分配任务、或者直接终止。
 
-这种差异也反映了两者的定位。Claude Code是一个面向终端用户的产品，追求极致的体验。OpenHarness是一个面向开发者的框架，追求简洁和可扩展性。
+**结果合并**：子任务完成后，父 Agent 需要合并结果。合并不是简单的字符串拼接，而是基于语义的整合。
 
-对于国内开发者来说，OpenHarness还有一个隐性优势：网络友好。Claude Code需要连接Anthropic的服务，在国内访问不太稳定。OpenHarness可以用国产模型，响应速度和稳定性都更有保障。
+父 Agent 会分析各个子结果之间的关系，解决冲突，补充缺失的上下文，生成一致的最终输出。
 
-## 09、实际使用中的几点感受
+**错误恢复**：如果某个子 Agent 失败，Swarm 有几种处理策略：重试（同样的任务再派一个 Agent）、回退（撤销已完成的子任务，整体失败）、补偿（让其他 Agent 接手失败的任务）。策略可以在创建 Swarm 时配置。
 
-测了几天OpenHarness，分享一些真实感受。
-
-**首先是响应速度**。因为代码轻量，启动和运行都比Claude Code快一些。特别是在资源受限的环境下，比如低配云服务器，优势更明显。我在一台2核4G的云服务器上测试，启动时间不到2秒，运行流畅。
-
-**其次是调试体验**。因为代码开源，遇到问题可以直接看源码。不像Claude Code是个黑盒，出问题只能猜。有一次Agent循环调用工具停不下来，我直接看了engine模块的代码，发现是max_iterations参数没设置好，改完就解决了。
-
-**第三是扩展性**。写个新的Tool或者Skill非常简单，几行代码就能搞定。这种低门槛让快速原型验证成为可能。我花半小时写了一个公司内部API的Tool，Agent就能直接调用我们的服务了。
-
-**第四是成本可控**。Claude Code只能用Anthropic的模型，价格相对较高。OpenHarness可以用各种模型，包括国产的便宜模型。对于日常开发任务，用DeepSeek或者通义千问完全够用，成本能降低不少。
-
-当然也有一些不足：
-
-**文档还不够完善**。虽然README写得不错，但一些高级功能的文档还在完善中。比如Hooks系统的详细用法、Swarm的高级特性，都需要看源码才能完全理解。
-
-**生态还在早期**。相比Claude Code的庞大用户群，OpenHarness的社区还小，遇到问题可能需要自己解决。不过GitHub Issues响应很快，作者团队很活跃。
-
-**UI相对简单**。OpenHarness的终端UI是用React Ink做的，功能够用但不如Claude Code精致。不过这也给了开发者定制UI的空间。如果你有前端能力，完全可以基于它做一个更漂亮的界面。
-
-**模型质量依赖**。因为支持多种模型，体验会因模型而异。用Claude 3.5 Sonnet效果确实好，但用一些小模型可能会出现理解偏差或者工具调用错误。这需要在使用时做好预期管理。
-
-## 10、写在最后
-
-OpenHarness的出现让我看到了开源Agent框架的新可能。
-
-它不是简单复制Claude Code，而是在理解其精髓的基础上，用更轻量的方式实现核心能力。1万行代码vs 51万行代码，这种对比本身就很有启发意义。
-
-对于想学习Agent开发的开发者，OpenHarness是一个很好的起点。代码量适中，架构清晰，功能完整。读完源码，你会对Agent的工作原理有深入理解。
-
-对于想构建自己Agent产品的团队，OpenHarness提供了一个坚实的基础。你可以基于它定制UI、接入自己的模型、集成内部工具，快速构建符合业务需求的Agent。
-
-【此处插入OpenHarness项目总结截图：截图目标：展示项目核心卖点和快速开始链接；关键词：OpenHarness、Quick Start、GitHub；建议位置：浏览器】
-
-2026年的AI Agent生态正在快速演进。MCP协议让工具标准化，AGENTS.md让行为规范标准化，像OpenHarness这样的框架让Agent开发组件化。
-
-这三者加在一起，意味着构建AI Agent的门槛正在快速降低。
-
-港大团队的这个项目还有一个值得称道的地方：社区友好。他们在GitHub上积极回应Issue，接受Pull Request，还建立了飞书和微信群方便中文用户交流。这种开放态度让项目发展得很快，发布一周就有11位贡献者。
-
-如果你也对AI Agent开发感兴趣，不妨去GitHub上搜一下HKUDS/OpenHarness，点个Star，clone下来跑一跑。
-
-说不定，你的第一个Agent产品就从这里开始了。
-
-对了，他们还有飞书和微信交流群，遇到问题可以直接问，社区氛围挺好的。中文文档也在完善中，对国内开发者很友好。感兴趣的小伙伴快去GitHub上体验一下这款轻量级的开源Agent框架吧，相信你会喜欢上它的！我们一起加油！
+这种设计让 Swarm 可以处理非常复杂的任务。比如重构一个大型项目，涉及几十个文件，Swarm 可以自动分解、并行处理、协调依赖、合并结果，整个过程对用户透明。
 
 ## ending
 
+OpenHarness 的出现让我看到了开源 Agent 框架的新可能。
+
+对于想学习 Agent 的开发者，OpenHarness 是一个很好的起点。代码量适中，架构清晰，功能完整。
+
+对于想构建自己 Agent 产品的团队，OpenHarness 也提供了一个基础。可以基于它定制 UI、接入自己的模型、集成内部工具，快速构建符合业务需求的 Agent。
+
+![](https://cdn.paicoding.com/stutymore/openharness-review-20260405155407.png)
+
 技术发展的规律从来都是这样：先有大公司做出惊艳的产品，证明方向是对的。然后开源社区跟进，把能力民主化，让每个开发者都能用上。
 
-OpenHarness正在做的，就是后者。
-
-它可能永远不会像Claude Code那样光鲜亮丽，但它会成为很多开发者工具箱里的基础零件。就像Linux不会替代Windows，但服务器上跑的绝大部分是Linux。
+OpenHarness 正在做的，正是这样一件事。
 
 【真正的技术普惠，不是让每个人都用得起最好的产品，而是让每个人都能造出自己需要的产品。】
 
-港大团队用1万行代码重构51万行代码的故事，也给了我们一个启示：代码量不等于价值。简洁的架构、清晰的逻辑、模块化的设计，才是软件工程的真谛。
-
 我们下期见！
+
